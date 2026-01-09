@@ -1,0 +1,124 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Deep Space Theme - Pure Black & Vibrant Red */
+    --background: 0 0% 0%; /* #000000 */
+    --foreground: 0 0% 100%; /* #FFFFFF */
+
+    --card: 0 0% 3%; /* #080808 */
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 3%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 0 100% 50%; /* #FF0000 - Pure Red */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 9%; /* #171717 */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 9%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 0 100% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 12%; /* Subtle border */
+    --input: 0 0% 12%;
+    --ring: 0 100% 50%;
+
+    --radius: 0.75rem;
+
+    /* Custom Tokens */
+    --glass: 0 0% 100% / 0.05;
+    --glass-border: 0 100% 100% / 0.1; /* Slight red tint in border maybe? sticking to white for now */
+    
+    --sidebar-background: 0 0% 1%; /* Almost pure black */
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 0 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 8%; 
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 8%;
+    --sidebar-ring: 0 100% 50%;
+  }
+
+  .dark {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased overflow-hidden;
+    background-image: 
+      radial-gradient(circle at 50% 0%, hsl(0 100% 50% / 0.15), transparent 40%),
+      radial-gradient(circle at 0% 0%, hsl(0 100% 50% / 0.05), transparent 40%);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  /* Advanced Glassmorphism */
+  .glass-panel {
+    @apply bg-black/40 backdrop-blur-2xl border border-white/10 shadow-2xl;
+  }
+  
+  .glass-card {
+    @apply bg-card/60 backdrop-blur-xl border border-white/5 hover:border-primary/50 transition-colors duration-300;
+  }
+
+  /* Neon Effects */
+  .neon-text {
+    text-shadow: 0 0 20px hsl(0 100% 50% / 0.5);
+  }
+  
+  .neon-border {
+    box-shadow: 0 0 10px hsl(0 100% 50% / 0.3), inset 0 0 10px hsl(0 100% 50% / 0.1);
+  }
+
+  /* Scrollbars */
+  /* Global Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 100px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  /* For Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  }
+
+  /* Utility to hide scrollbar but keep functionality */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
