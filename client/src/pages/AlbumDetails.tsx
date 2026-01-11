@@ -79,8 +79,8 @@ const AlbumDetails = () => {
         <div className="pb-32 -mt-6">
             {/* Immersive Background */}
             <div className="fixed inset-0 top-0 h-[500px] z-0 pointer-events-none">
-                <div className="absolute inset-0 bg-gradient-to-b from-emerald-900/40 via-black to-black" />
-                <img src={albumCover} className="w-full h-full object-cover opacity-20 blur-3xl" alt="" />
+                <div className="absolute inset-0 bg-gradient-to-b from-red-900/20 via-black to-black" />
+                <img src={albumCover} className="w-full h-full object-cover opacity-20 blur-3xl saturate-0" alt="" />
             </div>
 
             <div className="relative z-10">
@@ -118,7 +118,7 @@ const AlbumDetails = () => {
                         <div className="flex items-center justify-between mb-8">
                             <div className="flex items-center gap-4">
                                 <Button
-                                    className="w-14 h-14 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black hover:scale-105 transition-all shadow-glow flex items-center justify-center"
+                                    className="w-14 h-14 rounded-full bg-white text-black hover:bg-zinc-200 hover:scale-105 transition-all shadow-glow-white flex items-center justify-center"
                                     onClick={() => playPlaylist(tracks)}
                                 >
                                     <Play className="w-7 h-7 ml-1 fill-current" />

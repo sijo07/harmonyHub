@@ -6,6 +6,7 @@ import { usePlayer } from "@/contexts/PlayerContext";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/services/api";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AddToPlaylistModal } from "@/components/AddToPlaylistModal";
+import { SongOptionsMenu } from "@/components/SongOptionsMenu";
 
 interface TrackCardProps {
   track: Track;
@@ -34,7 +36,6 @@ export const TrackCard = ({ track, index, showAlbum = true, onRemove, canRemove 
   const isCurrentTrack = currentTrack?.id === track.id;
 
   const [isLiked, setIsLiked] = useState(false);
-  const [showPlaylistModal, setShowPlaylistModal] = useState(false);
 
   useEffect(() => {
     if (user?.likedSongs) {
@@ -69,147 +70,123 @@ export const TrackCard = ({ track, index, showAlbum = true, onRemove, canRemove 
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index ? index * 0.05 : 0 }}
-        whileHover={{ backgroundColor: "rgba(255,255,255,0.05)" }}
-        className="group flex items-center gap-4 p-3 rounded-xl transition-colors cursor-pointer group/card"
-        onClick={handlePlay}
-      >
-        {/* Track Number / Play Button */}
-        <div className="w-8 flex items-center justify-center">
-          {index !== undefined ? (
-            <span className="text-sm text-muted-foreground group-hover/card:hidden">
-              {index + 1}
-            </span>
-          ) : null}
-          <motion.div
-            className={index !== undefined ? "hidden group-hover/card:flex" : "flex"}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Button variant="ghost" size="icon-sm" onClick={handlePlay}>
-              {isCurrentTrack && isPlaying ? (
-                <Pause className="w-4 h-4 text-primary" />
-              ) : (
-                <Play className="w-4 h-4" />
-              )}
-            </Button>
-          </motion.div>
-        </div>
-
-        {/* Album Art */}
-        <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
-          <img
-            src={track.coverUrl}
-            alt={track.album}
-            className="w-full h-full object-cover"
-          />
-          {isCurrentTrack && isPlaying && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="absolute inset-0 bg-black/50 flex items-center justify-center"
-            >
-              <div className="flex items-end gap-0.5 h-4">
-                {[1, 2, 3].map((i) => (
-                  <motion.div
-                    key={i}
-                    className="w-1 bg-primary rounded-full"
-                    animate={{
-                      height: ["40%", "100%", "60%", "80%", "40%"],
-                    }}
-                    transition={{
-                      duration: 1,
-                      repeat: Infinity,
-                      delay: i * 0.2,
-                    }}
-                  />
-                ))}
-              </div>
-            </motion.div>
+      return (
+      <>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: index ? index * 0.05 : 0 }}
+          className={cn(
+            "group flex items-center gap-4 p-3 rounded-xl transition-all duration-300 cursor-pointer group/card border border-transparent",
+            isCurrentTrack ? "bg-white/10 border-white/5 shadow-[inset_0_0_20px_rgba(255,51,153,0.1)]" : "hover:bg-white/5 hover:border-white/5"
           )}
-        </div>
-
-        {/* Track Info */}
-        <div className="flex-1 min-w-0">
-          <p className={`font-medium truncate ${isCurrentTrack ? "text-primary" : ""}`}>
-            {track.title}
-          </p>
-          <p className="text-sm text-muted-foreground truncate">{track.artist}</p>
-        </div>
-
-        {/* Album */}
-        {showAlbum && (
-          <span className="hidden md:block text-sm text-muted-foreground truncate w-40">
-            {track.album}
-          </span>
-        )}
-
-        {/* Like Button */}
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className={`opacity-0 group-hover/card:opacity-100 transition-opacity ${isLiked ? "opacity-100" : ""}`}
-          onClick={handleLike}
+          onClick={handlePlay}
         >
-          <Heart className={`w-4 h-4 transition-colors ${isLiked ? "fill-red-500 text-red-500" : "text-zinc-400 hover:text-white"}`} />
-        </Button>
-
-        {/* Duration */}
-        <span className="text-sm text-muted-foreground w-12 text-right">
-          {formatDuration(track.duration)}
-        </span>
-
-        {/* More Button Key */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="opacity-0 group-hover/card:opacity-100 transition-opacity"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 bg-zinc-900 border-white/10 text-zinc-200">
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowPlaylistModal(true);
-              }}
-              className="hover:bg-white/10 cursor-pointer"
-            >
-              <PlusCircle className="mr-2 h-4 w-4" />
-              <span>Add to Playlist</span>
-            </DropdownMenuItem>
-
-            {canRemove && onRemove && (
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemove();
-                }}
-                className="hover:bg-red-900/30 text-red-500 hover:text-red-400 cursor-pointer focus:text-red-400 focus:bg-red-900/30"
-              >
-                <PlusCircle className="mr-2 h-4 w-4 rotate-45" />
-                <span>Remove from Playlist</span>
-              </DropdownMenuItem>
+          {/* Track Number / Play Button */}
+          <div className="w-8 flex items-center justify-center relative">
+            {index !== undefined && !isCurrentTrack && (
+              <span className="text-sm text-zinc-500 font-mono group-hover/card:hidden">
+                {index + 1}
+              </span>
             )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </motion.div>
+            {isCurrentTrack && isPlaying && (
+              <div className="absolute inset-0 flex items-center justify-center group-hover/card:hidden">
+                <div className="flex gap-0.5 h-3 items-end">
+                  <motion.div animate={{ height: ["30%", "100%", "30%"] }} transition={{ duration: 0.6, repeat: Infinity }} className="w-0.5 bg-primary rounded-full" />
+                  <motion.div animate={{ height: ["100%", "30%", "100%"] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.1 }} className="w-0.5 bg-primary rounded-full" />
+                  <motion.div animate={{ height: ["30%", "100%", "30%"] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }} className="w-0.5 bg-primary rounded-full" />
+                </div>
+              </div>
+            )}
 
-      <AnimatePresence>
-        {showPlaylistModal && (
-          <AddToPlaylistModal
-            song={track as any}
-            onClose={() => setShowPlaylistModal(false)}
+            <motion.div
+              className={cn(
+                "items-center justify-center",
+                index !== undefined && !isCurrentTrack ? "hidden group-hover/card:flex" : "flex",
+                isCurrentTrack && isPlaying ? "hidden group-hover/card:flex" : "flex"
+              )}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Button variant="ghost" size="icon-sm" onClick={handlePlay} className={cn("hover:bg-transparent", isCurrentTrack ? "text-primary" : "text-white")}>
+                {isCurrentTrack && isPlaying ? (
+                  <Pause className="w-4 h-4 fill-current" />
+                ) : (
+                  <Play className="w-4 h-4 fill-current ml-0.5" />
+                )}
+              </Button>
+            </motion.div>
+          </div>
+
+          {/* Album Art */}
+          <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 group-hover:shadow-[0_0_15px_rgba(255,255,255,0.2)] transition-shadow">
+            <img
+              src={track.coverUrl}
+              alt={track.album}
+              className="w-full h-full object-cover"
+            />
+            {isCurrentTrack && isPlaying && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <div className="flex items-end gap-0.5 h-4">
+                  {[1, 2, 3].map((i) => (
+                    <motion.div
+                      key={i}
+                      className="w-1 bg-primary rounded-full shadow-[0_0_5px_var(--neon-pink)]"
+                      animate={{
+                        height: ["40%", "100%", "60%", "80%", "40%"],
+                      }}
+                      transition={{
+                        duration: 1,
+                        repeat: Infinity,
+                        delay: i * 0.2,
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Track Info */}
+          <div className="flex-1 min-w-0">
+            <p className={cn("font-medium truncate transition-colors", isCurrentTrack ? "text-primary text-glow-pink" : "text-white group-hover:text-primary")}>
+              {track.title}
+            </p>
+            <p className="text-sm text-zinc-400 truncate group-hover:text-zinc-300">{track.artist}</p>
+          </div>
+
+          {/* Album */}
+          {showAlbum && (
+            <span className="hidden md:block text-sm text-zinc-500 truncate w-40 group-hover:text-zinc-400">
+              {track.album}
+            </span>
+          )}
+
+          {/* Like Button */}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className={`opacity-0 group-hover/card:opacity-100 transition-opacity hover:bg-transparent ${isLiked ? "opacity-100" : ""}`}
+            onClick={handleLike}
+          >
+            <Heart className={`w-4 h-4 transition-colors transition-transform active:scale-95 ${isLiked ? "fill-primary text-primary drop-shadow-[0_0_5px_var(--neon-pink)]" : "text-zinc-400 hover:text-white"}`} />
+          </Button>
+
+          {/* Duration */}
+          <span className="text-sm text-zinc-500 w-12 text-right font-mono group-hover:text-zinc-300">
+            {formatDuration(track.duration)}
+          </span>
+
+          {/* Options Menu */}
+          <SongOptionsMenu
+            song={track}
+            className="opacity-0 group-hover/card:opacity-100 transition-opacity"
+            onRemove={canRemove && onRemove ? onRemove : undefined}
+            showAlbumOption={!showAlbum}
           />
-        )}
-      </AnimatePresence>
+        </motion.div>
+      </>
+      );
     </>
   );
 };

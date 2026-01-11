@@ -235,4 +235,32 @@ router.get('/songs/:id/lyrics', async (req, res) => {
     }
 });
 
+router.get('/radio', async (req, res) => {
+    try {
+        const result = await musicService.getRadioStations();
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+router.get('/live-radio', async (req, res) => {
+    try {
+        const { limit, tag } = req.query;
+        const result = await musicService.getLiveRadioStations(limit, tag);
+        res.json({ data: result });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+router.get('/new-releases', async (req, res) => {
+    try {
+        const result = await musicService.getNewReleases();
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
 module.exports = router;

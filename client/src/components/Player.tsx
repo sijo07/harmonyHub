@@ -20,6 +20,7 @@ import { usePlayer } from "@/contexts/PlayerContext";
 import { cn } from "@/lib/utils";
 import { FullScreenPlayer } from "./FullScreenPlayer";
 import { QueueSidebar } from "./QueueSidebar";
+import { SongOptionsMenu } from "@/components/SongOptionsMenu";
 
 const formatTime = (seconds: number) => {
   const mins = Math.floor(seconds / 60);
@@ -53,6 +54,7 @@ export const Player = () => {
 
   const [isMuted, setIsMuted] = useState(false);
   const [prevVolume, setPrevVolume] = useState(volume);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Simulate playback progress
   useEffect(() => {
@@ -81,15 +83,7 @@ export const Player = () => {
   };
 
   if (!currentTrack) {
-    return (
-      <motion.div
-        initial={{ y: 100 }}
-        animate={{ y: 0 }}
-        className="fixed bottom-0 left-0 right-0 h-24 bg-card/80 backdrop-blur-xl border-t border-white/10 flex items-center justify-center"
-      >
-        <p className="text-muted-foreground">Select a track to start playing</p>
-      </motion.div>
-    );
+    return null; // Don't show anything if no track (Cleaner look)
   }
 
   return (
@@ -101,151 +95,143 @@ export const Player = () => {
       <QueueSidebar />
 
       <motion.div
-        initial={{ y: 100 }}
+        initial={{ y: "100%" }}
         animate={{ y: 0 }}
-        className="fixed bottom-[80px] md:bottom-0 left-0 right-0 h-20 md:h-24 bg-card/90 backdrop-blur-xl border-t border-white/10 px-4 z-40 transition-all duration-300"
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="fixed bottom-0 left-0 right-0 z-50 w-full bg-[#050508]/95 backdrop-blur-3xl border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="h-full max-w-screen-2xl mx-auto flex items-center justify-between md:justify-start gap-4">
-          {/* Track Info - Responsive */}
-          <div className="flex items-center gap-3 w-full md:w-[30%] md:min-w-[200px]" onClick={toggleFullScreen}>
-            <motion.img
-              key={currentTrack.id}
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              src={currentTrack.coverUrl}
-              alt={currentTrack.title}
-              className="w-12 h-12 md:w-14 md:h-14 rounded-lg object-cover shadow-lg cursor-pointer"
-            />
-            <div className="min-w-0 flex-1 md:flex-initial">
-              <p className="font-medium truncate text-sm md:text-base cursor-pointer">
-                {currentTrack.title}
-              </p>
-              <p className="text-xs md:text-sm text-muted-foreground truncate">
-                {currentTrack.artist}
-              </p>
-            </div>
+        {/* Interactive Seek Bar - Hovering at the top edge */}
+        <div className="absolute -top-3 left-0 right-0 h-6 group/seek z-50 flex items-center px-0">
+          <Slider
+            value={[progress]}
+            max={currentTrack.duration || 100}
+            step={1}
+            onValueChange={(val) => setProgress(val[0])}
+            className="w-full cursor-pointer touch-none [&>span:first-child]:h-1 [&>span:first-child]:bg-white/10 group-hover/seek:[&>span:first-child]:h-1.5 transition-all [&_span[data-orientation=horizontal]]:bg-primary [&_span]:transition-all"
+          />
+        </div>
 
-            {/* Mobile Play/Pause Button (Inside Track Info area for mobile) */}
-            <div className="flex md:hidden items-center gap-2">
-              <Button
-                variant="player"
-                size="icon-sm"
-                onClick={(e) => { e.stopPropagation(); isPlaying ? pauseTrack() : resumeTrack(); }}
-                className="w-10 h-10 rounded-full"
+        <div className="container mx-auto max-w-[1800px] px-4 md:px-6 py-3 md:py-4 h-20 md:h-24">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center h-full gap-4">
+
+            {/* Left: Track Info & Visuals */}
+            <div className="flex items-center gap-4 min-w-0 justify-start group/info">
+              <div
+                className="relative cursor-pointer flex-shrink-0"
+                onClick={toggleFullScreen}
               >
-                {isPlaying ? (
-                  <Pause className="w-5 h-5" />
-                ) : (
-                  <Play className="w-5 h-5 ml-1" />
-                )}
-              </Button>
+                <div className={cn("absolute inset-0 bg-primary/20 rounded-full blur-md animate-pulse", !isPlaying && "hidden")} />
+                <motion.img
+                  key={currentTrack.id}
+                  animate={{ rotate: isPlaying ? 360 : 0 }}
+                  transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                  src={currentTrack.coverUrl}
+                  alt={currentTrack.title}
+                  className="w-12 h-12 md:w-16 md:h-16 rounded-full object-cover border-2 border-white/10 relative z-10 group-hover/info:border-primary/50 transition-colors"
+                />
+                <div className="absolute inset-0 z-20 flex items-center justify-center opacity-0 group-hover/info:opacity-100 transition-opacity">
+                  <Maximize2 className="w-6 h-6 text-white drop-shadow-md" />
+                </div>
+              </div>
+
+              <div className="min-w-0 flex-1 hidden md:block">
+                <div className="flex items-center gap-3 mb-1">
+                  <p className="font-bold text-base text-white truncate text-glow-hover cursor-pointer hover:text-primary transition-colors">
+                    {currentTrack.title}
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={(e) => { e.stopPropagation(); currentTrack && toggleFavorite(currentTrack) }}
+                    className={cn("w-6 h-6 hover:bg-transparent hover:scale-110", isFavorite(currentTrack.id) ? "text-primary" : "text-zinc-500 hover:text-white")}
+                  >
+                    <Heart className={cn("w-4 h-4", isFavorite(currentTrack.id) && "fill-current")} />
+                  </Button>
+                </div>
+                <p className="text-xs text-zinc-400 font-medium tracking-wide uppercase">
+                  {currentTrack.artist}
+                </p>
+              </div>
             </div>
 
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={(e) => { e.stopPropagation(); currentTrack && toggleFavorite(currentTrack) }}
-              className={cn(currentTrack && isFavorite(currentTrack.id) && "text-red-500", "hidden md:inline-flex")}
-              title="Add to Favorites"
-            >
-              <Heart className={cn("w-4 h-4", currentTrack && isFavorite(currentTrack.id) && "fill-current")} />
-            </Button>
-          </div>
+            {/* Center: Playback Controls */}
+            <div className="flex flex-col items-center justify-center gap-2">
+              <div className="flex items-center gap-4 md:gap-6">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={toggleShuffle}
+                  className={cn("hidden md:flex rounded-full hover:bg-white/10 w-8 h-8 transition-all", shuffle && "text-primary")}
+                >
+                  <Shuffle className="w-4 h-4" />
+                </Button>
 
-          {/* Controls - Hidden on Mobile */}
-          <div className="hidden md:flex flex-1 flex-col items-center gap-2 max-w-[40%]">
-            <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon-sm" onClick={prevTrack} className="rounded-full hover:bg-white/10 w-10 h-10 hover:text-white text-zinc-300">
+                  <SkipBack className="w-5 h-5 fill-current" />
+                </Button>
+
+                <Button
+                  size="icon"
+                  onClick={isPlaying ? pauseTrack : resumeTrack}
+                  className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-white text-black hover:bg-primary hover:text-white hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                >
+                  {isPlaying ? (
+                    <Pause className="w-5 h-5 md:w-6 md:h-6 fill-current" />
+                  ) : (
+                    <Play className="w-5 h-5 md:w-6 md:h-6 fill-current ml-0.5" />
+                  )}
+                </Button>
+
+                <Button variant="ghost" size="icon-sm" onClick={nextTrack} className="rounded-full hover:bg-white/10 w-10 h-10 hover:text-white text-zinc-300">
+                  <SkipForward className="w-5 h-5 fill-current" />
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={toggleRepeat}
+                  className={cn("hidden md:flex rounded-full hover:bg-white/10 w-8 h-8 transition-all", repeat !== "off" && "text-primary")}
+                >
+                  {repeat === "one" ? <Repeat1 className="w-4 h-4" /> : <Repeat className="w-4 h-4" />}
+                </Button>
+              </div>
+
+              <div className="hidden md:flex items-center gap-2 text-xs font-mono text-zinc-500">
+                <span>{formatTime(progress)}</span>
+                <span className="text-zinc-700">|</span>
+                <span>{formatTime(currentTrack.duration)}</span>
+              </div>
+            </div>
+
+            {/* Right: Volume & Queue */}
+            <div className="flex items-center gap-3 md:gap-6 justify-end">
+              <div className="hidden md:flex items-center gap-2 group/vol">
+                <Button variant="ghost" size="icon-sm" onClick={handleMuteToggle} className="w-8 h-8 hover:bg-white/5 text-zinc-400 hover:text-white">
+                  {isMuted || volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                </Button>
+                <div className="w-24 opacity-0 group-hover/vol:opacity-100 transition-opacity">
+                  <Slider
+                    value={[volume * 100]}
+                    max={100}
+                    step={1}
+                    onValueChange={([value]) => setVolume(value / 100)}
+                    className="cursor-pointer"
+                  />
+                </div>
+              </div>
+
               <Button
                 variant="ghost"
-                size="icon-sm"
-                onClick={toggleShuffle}
-                className={cn(shuffle && "text-red-500", "transition-all")}
-                title={shuffle ? "Shuffle On" : "Shuffle Off"}
+                size="icon"
+                onClick={toggleQueue}
+                className={cn("rounded-full hover:bg-white/10 w-10 h-10 transition-colors", isQueueOpen && "text-primary bg-white/5")}
               >
-                <Shuffle className={cn("w-4 h-4", shuffle && "drop-shadow-[0_0_8px_rgba(255,0,0,0.5)]")} />
-              </Button>
-              <Button variant="ghost" size="icon-sm" onClick={prevTrack} title="Previous (Ctrl+Left)">
-                <SkipBack className="w-5 h-5" />
-              </Button>
-              <Button
-                variant="player"
-                size="icon-lg"
-                onClick={isPlaying ? pauseTrack : resumeTrack}
-                className="mx-2 shadow-glow active:scale-95 transition-all"
-                title="Play/Pause (Space)"
-              >
-                {isPlaying ? (
-                  <Pause className="w-6 h-6" />
-                ) : (
-                  <Play className="w-6 h-6 ml-1" />
-                )}
-              </Button>
-              <Button variant="ghost" size="icon-sm" onClick={nextTrack} title="Next (Ctrl+Right)">
-                <SkipForward className="w-5 h-5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={toggleRepeat}
-                className={cn(repeat !== "off" && "text-red-500", "transition-all")}
-                title={`Repeat: ${repeat.charAt(0).toUpperCase() + repeat.slice(1)}`}
-              >
-                {repeat === "one" ? (
-                  <Repeat1 className={cn("w-4 h-4", "drop-shadow-[0_0_8px_rgba(255,0,0,0.5)]")} />
-                ) : (
-                  <Repeat className={cn("w-4 h-4", repeat === "all" && "drop-shadow-[0_0_8px_rgba(255,0,0,0.5)]")} />
-                )}
+                <ListMusic className="w-5 h-5" />
               </Button>
             </div>
 
-            {/* Progress Bar */}
-            <div className="w-full flex items-center gap-2 group/progress">
-              <span className="text-[10px] font-mono text-muted-foreground w-10 text-right opacity-0 group-hover/progress:opacity-100 transition-opacity">
-                {formatTime(progress)}
-              </span>
-              <Slider
-                value={[progress]}
-                max={currentTrack.duration}
-                step={1}
-                onValueChange={([value]) => setProgress(value)}
-                className="flex-1 cursor-pointer"
-              />
-              <span className="text-[10px] font-mono text-muted-foreground w-10 opacity-0 group-hover/progress:opacity-100 transition-opacity">
-                {formatTime(currentTrack.duration)}
-              </span>
-            </div>
-          </div>
-
-          {/* Volume & Extra - Hidden on Mobile */}
-          <div className="hidden md:flex items-center gap-2 w-[30%] justify-end">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={toggleQueue}
-              className={cn(isQueueOpen ? "text-red-500 bg-white/5" : "hover:bg-white/5")}
-              title="Queue"
-            >
-              <ListMusic className="w-4 h-4" />
-            </Button>
-            <div className="flex items-center gap-2 w-32 group/volume">
-              <Button variant="ghost" size="icon-sm" onClick={handleMuteToggle} title="Mute (M)">
-                {isMuted || volume === 0 ? (
-                  <VolumeX className="w-4 h-4 text-red-500" />
-                ) : (
-                  <Volume2 className="w-4 h-4" />
-                )}
-              </Button>
-              <Slider
-                value={[volume * 100]}
-                max={100}
-                step={1}
-                onValueChange={([value]) => setVolume(value / 100)}
-                className="flex-1"
-              />
-            </div>
-            <Button variant="ghost" size="icon-sm" onClick={toggleFullScreen} title="Full Screen" className="hover:bg-white/5">
-              <Maximize2 className="w-4 h-4" />
-            </Button>
           </div>
         </div>
       </motion.div>

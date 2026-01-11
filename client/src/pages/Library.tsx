@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { Grid, List, Plus, Search, Heart, Disc3, Music2, Clock, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,41 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api, convertImage } from "@/services/api";
 
 type FilterType = "all" | "playlists" | "albums" | "artists" | "podcasts";
+
+const TiltCard = ({ children, className }: { children: React.ReactNode, className?: string }) => {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const mouseX = useSpring(x, { stiffness: 500, damping: 100 });
+  const mouseY = useSpring(y, { stiffness: 500, damping: 100 });
+
+  function onMouseMove({ currentTarget, clientX, clientY }: React.MouseEvent) {
+    const { left, top, width, height } = currentTarget.getBoundingClientRect();
+    x.set(clientX - left - width / 2);
+    y.set(clientY - top - height / 2);
+  }
+
+  function onMouseLeave() {
+    x.set(0);
+    y.set(0);
+  }
+
+  const rotateX = useTransform(mouseY, [-25, 25], [10, -10]);
+  const rotateY = useTransform(mouseX, [-25, 25], [-10, 10]);
+
+  return (
+    <motion.div
+      style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+      onMouseMove={onMouseMove}
+      onMouseLeave={onMouseLeave}
+      className={cn("relative group perspective-1000", className)}
+    >
+      <div style={{ transform: "translateZ(20px)" }} className="h-full transition-transform duration-200">
+        {children}
+      </div>
+    </motion.div>
+  );
+};
 
 const Library = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -346,20 +381,24 @@ const Library = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 perspective-1000"
             >
-              <PlaylistCard playlist={{
-                id: 'liked-songs',
-                name: 'Liked Songs',
-                description: 'Your favorite tracks',
-                coverUrl: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=800&auto=format&fit=crop',
-                tracks: likedTracks.map(mapSongToTrack),
-                createdBy: 'You',
-                isPublic: false
-              }} index={0} />
+              <TiltCard>
+                <PlaylistCard playlist={{
+                  id: 'liked-songs',
+                  name: 'Liked Songs',
+                  description: 'Your favorite tracks',
+                  coverUrl: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=800&auto=format&fit=crop',
+                  tracks: likedTracks.map(mapSongToTrack),
+                  createdBy: 'You',
+                  isPublic: false
+                }} index={0} />
+              </TiltCard>
 
               {displayPlaylists.map((playlist, index) => (
-                <PlaylistCard key={playlist.id} playlist={playlist} index={index + 1} />
+                <TiltCard key={playlist.id}>
+                  <PlaylistCard playlist={playlist} index={index + 1} />
+                </TiltCard>
               ))}
             </motion.div>
           ) : (

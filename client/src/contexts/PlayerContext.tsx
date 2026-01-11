@@ -41,6 +41,7 @@ interface PlayerContextType {
   pauseTrack: () => void;
   resumeTrack: () => void;
   lyrics: string | null;
+  addToQueue: (track: Track) => void;
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
@@ -141,6 +142,37 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
+  // Persistence Logic
+  useEffect(() => {
+    const savedState = localStorage.getItem('harmony_player_state');
+    if (savedState) {
+      try {
+        const parsed = JSON.parse(savedState);
+        if (parsed.currentTrack) setCurrentTrack(parsed.currentTrack);
+        if (parsed.queue) setQueue(parsed.queue);
+        if (typeof parsed.currentIndex === 'number') setCurrentIndex(parsed.currentIndex);
+        if (typeof parsed.volume === 'number') setVolume(parsed.volume);
+        if (typeof parsed.shuffle === 'boolean') setShuffle(parsed.shuffle);
+        if (parsed.repeat) setRepeat(parsed.repeat);
+        // We do NOT restore isPlaying to avoid auto-play issues
+      } catch (e) {
+        console.error("Failed to restore player state", e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const state = {
+      currentTrack,
+      queue,
+      currentIndex,
+      volume,
+      shuffle,
+      repeat
+    };
+    localStorage.setItem('harmony_player_state', JSON.stringify(state));
+  }, [currentTrack, queue, currentIndex, volume, shuffle, repeat]);
+
   useEffect(() => {
     const audio = audioRef.current;
     audio.crossOrigin = "anonymous";
@@ -233,17 +265,71 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsPlaying(!isPlaying);
   };
 
-  const nextTrack = () => {
+  const nextTrack = async () => {
     if (queue.length === 0 || currentIndex === -1) return;
+
+    // Repeat One logic
     if (repeat === 'one') {
       audioRef.current.currentTime = 0;
       audioRef.current.play();
       return;
     }
-    if (currentIndex === queue.length - 1 && repeat === 'off') {
-      setIsPlaying(false);
-      return;
+
+    // Checking if we are at the end of the queue
+    if (currentIndex === queue.length - 1) {
+      if (repeat === 'off') {
+        // Autoplay Logic: Fetch similar songs
+        console.log("Queue ended, fetching similar songs for autoplay...");
+        try {
+          // Use current artist to find similar songs
+          // Note: api.searchSongs returns { data: { results: [...] } }
+          const similarSongsRes = await api.searchSongs(currentTrack?.artist || "trending");
+          const newTracks = similarSongsRes?.data?.results || [];
+
+          if (newTracks.length > 0) {
+            // Map API response to Track interface
+            const mappedTracks: Track[] = newTracks.map((item: any) => ({
+              id: item.id,
+              title: item.name || item.title,
+              artist: item.artist || (item.artists?.primary?.[0]?.name) || "Unknown",
+              album: item.album?.name || item.album || "Unknown Album",
+              coverUrl: item.image?.[item.image.length - 1]?.link || item.image || "",
+              duration: parseInt(item.duration) || 0,
+              previewUrl: item.downloadUrl?.[item.downloadUrl.length - 1]?.link || item.previewUrl || ""
+            })).filter((t: Track) => t.previewUrl);
+
+            // Filter out duplicates that are already in the queue
+            const uniqueNewTracks = mappedTracks.filter((track: Track) =>
+              !queue.some(qTrack => qTrack.id === track.id)
+            );
+
+            if (uniqueNewTracks.length > 0) {
+              const nextSong = uniqueNewTracks[0];
+              const updatedQueue = [...queue, ...uniqueNewTracks];
+
+              setQueue(updatedQueue);
+              setCurrentIndex(currentIndex + 1);
+              setCurrentTrack(nextSong);
+
+              const audioSrc = nextSong.previewUrl;
+              if (audioSrc) {
+                audioRef.current.src = audioSrc;
+                audioRef.current.play();
+                setIsPlaying(true);
+                fetchLyrics(nextSong.id || "");
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Autoplay failed:", error);
+        }
+
+        // If autoplay failed or no new songs, stop.
+        setIsPlaying(false);
+        return;
+      }
     }
+
     const nextIndex = (currentIndex + 1) % queue.length;
     const nextSong = queue[nextIndex];
     setCurrentIndex(nextIndex);
@@ -407,6 +493,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isPlaying, currentTrack, queue, currentIndex, volume, repeat, shuffle]);
 
+  const addToQueue = (track: Track) => {
+    setQueue(prev => [...prev, track]);
+  };
+
   const value = {
     currentTrack, isPlaying, queue, currentTime, duration, volume, favorites, playlists, analyser,
     isQueueOpen, toggleQueue, playTrack, togglePlay, nextTrack, prevTrack, changeVolume, seek,
@@ -415,8 +505,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     progress: currentTime, setProgress: seek, setVolume: changeVolume,
     pauseTrack: () => { if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); } },
     resumeTrack: () => { if (!isPlaying) { audioRef.current.play(); setIsPlaying(true); } },
-    lyrics
+    lyrics,
+    addToQueue
   };
+
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
 };

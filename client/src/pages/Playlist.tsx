@@ -239,7 +239,7 @@ const PlaylistPage = () => {
               initial="hidden"
               animate="show"
             >
-              <div className="grid grid-cols-[auto_1fr_auto] md:grid-cols-[auto_2fr_1fr_auto] gap-4 px-4 py-3 text-xs font-semibold text-zinc-500 border-b border-white/5 mb-4 uppercase tracking-widest sticky top-0 z-10 bg-black/90 backdrop-blur-md -mx-4 md:mx-0 rounded-lg">
+              <div className="grid grid-cols-[auto_1fr_auto] md:grid-cols-[auto_2fr_1fr_auto] gap-4 px-4 py-3 text-xs font-semibold text-zinc-400 border-b border-white/5 mb-4 uppercase tracking-widest sticky top-0 z-10 bg-black/60 backdrop-blur-xl shadow-lg -mx-4 md:mx-0 rounded-lg transition-all">
                 <span className="w-8 text-center">#</span>
                 <span>Title</span>
                 <span className="hidden md:block">Album</span>

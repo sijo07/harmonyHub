@@ -206,6 +206,33 @@ export const musicApi = {
             console.error('Featured Artists Error:', error);
             return [];
         }
+    },
+    getRadioStations: async () => {
+        try {
+            const response = await fetch(`${BACKEND_URL}/music/radio`);
+            return await response.json();
+        } catch (e) {
+            console.error(e);
+            return { data: { charts: [], radio: [] } };
+        }
+    },
+    getLiveStations: async (limit = 20, tag = '') => {
+        try {
+            const response = await fetch(`${BACKEND_URL}/music/live-radio?limit=${limit}&tag=${tag}`);
+            return await response.json();
+        } catch (e) {
+            console.error(e);
+            return { data: [] };
+        }
+    },
+    getNewReleases: async () => {
+        try {
+            const response = await fetch(`${BACKEND_URL}/music/new-releases`);
+            return await response.json();
+        } catch (e) {
+            console.error(e);
+            return { data: { newTrending: [], newAlbums: [], topPlaylists: [] } };
+        }
     }
 };
 
@@ -240,6 +267,19 @@ export const api = {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!response.ok) throw new Error('Failed to fetch user');
+            return response.json();
+        },
+        updateProfile: async (data: { name?: string; email?: string; password?: string }) => {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${BACKEND_URL}/auth/updatedetails`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+            if (!response.ok) throw new Error('Failed to update profile');
             return response.json();
         }
     },
@@ -280,6 +320,9 @@ export const api = {
     getTamilHits: musicApi.getTamilHits,
     getHindiHits: musicApi.getHindiHits,
     getFeaturedArtists: musicApi.getFeaturedArtists,
+    getRadioStations: musicApi.getRadioStations,
+    getLiveStations: musicApi.getLiveStations,
+    getNewReleases: musicApi.getNewReleases,
 
     convertImage: convertImage,
 
